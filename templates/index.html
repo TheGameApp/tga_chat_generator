@@ -253,36 +253,29 @@
     </div>
 
     <script>
-        const data = {
-            "slides": [
-                {
-                    "rol": "Chico",
-                    "tipo_slide": "chat",
-                    "mensaje": "Ese outfit 👌🔥",
-                    "isStoryReply": true
-                },
-                {
-                    "rol": "Chica",
-                    "tipo_slide": "chat",
-                    "mensaje": "Jajaja gracias 😅"
-                },
-                {
-                    "rol": "Chica",
-                    "tipo_slide": "chat",
-                    "mensaje": "¿Siempre te vistes así o fue solo para la foto?"
-                },
-                {
-                    "rol": "Chico",
-                    "tipo_slide": "chat",
-                    "mensaje": "Y si te digo que fue casual… 😏"
-                },
-                {
-                    "rol": "Chica",
-                    "tipo_slide": "chat",
-                    "mensaje": "Mmmm… interesante 😌"
+        // Variable para almacenar los datos de la conversación
+        let data = { slides: [] };
+
+        // Función para cargar el JSON externo
+        async function loadConversation() {
+            try {
+                const response = await fetch('/static/js/conversation.json');
+                if (!response.ok) {
+                    throw new Error('Error al cargar la conversación');
                 }
-            ]
-        };
+                data = await response.json();
+                // Iniciar la conversación una vez cargados los datos
+                addMessage();
+            } catch (error) {
+                console.error('Error:', error);
+                // Mostrar un mensaje de error en el chat si falla la carga
+                const container = document.getElementById("chat");
+                const errorMsg = document.createElement("div");
+                errorMsg.className = "message chico";
+                errorMsg.textContent = "Error al cargar la conversación";
+                container.appendChild(errorMsg);
+            }
+        }
 
         const container = document.getElementById("chat");
         let messageIndex = 0;
@@ -357,9 +350,8 @@
             }
         }
 
-        // Se ha comentado el timeout inicial
-        // setTimeout(addMessage, 500);
-        addMessage();
+        // Cargar la conversación al iniciar
+        document.addEventListener('DOMContentLoaded', loadConversation);
 
         // Close button functionality
         document.querySelector('.story-reply-close').addEventListener('click', function () {

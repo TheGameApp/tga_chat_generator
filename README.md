@@ -71,6 +71,45 @@ tga_chat_generator/
 └── README.md         # Este archivo
 ```
 
+## 💬 Estructura de la Conversación
+
+El chat se genera a partir de un archivo JSON ubicado en `static/js/conversation.json`. Puedes modificar este archivo para personalizar la conversación.
+
+### Estructura del JSON
+
+```json
+{
+  "slides": [
+    {
+      "rol": "Chico",
+      "tipo_slide": "chat",
+      "mensaje": "Mensaje del chat",
+      "isStoryReply": true  // Opcional: true solo para el primer mensaje
+    },
+    // ... más mensajes
+  ]
+}
+```
+
+### Campos disponibles
+
+- `rol`: Puede ser "Chico" o "Chica" para alinear los mensajes a la derecha o izquierda respectivamente.
+- `tipo_slide`: Actualmente solo soporta "chat".
+- `mensaje`: El texto del mensaje a mostrar.
+- `isStoryReply`: (Opcional) Si es `true`, muestra una vista previa de la historia encima del mensaje.
+
+### Ejemplo de uso
+
+Para agregar un nuevo mensaje, simplemente añade un nuevo objeto al array `slides`:
+
+```json
+{
+  "rol": "Chica",
+  "tipo_slide": "chat",
+  "mensaje": "¡Hola! ¿Cómo estás?"
+}
+```
+
 ## 🔧 Variables de entorno
 
 Crea un archivo `.env` en la raíz del proyecto si necesitas configurar variables de entorno:

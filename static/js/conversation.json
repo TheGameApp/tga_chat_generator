@@ -1,0 +1,30 @@
+{
+  "slides": [
+    {
+      "rol": "Chico",
+      "tipo_slide": "chat",
+      "mensaje": "Ese outfit 👌🔥",
+      "isStoryReply": true
+    },
+    {
+      "rol": "Chica",
+      "tipo_slide": "chat",
+      "mensaje": "Jajaja gracias 😅"
+    },
+    {
+      "rol": "Chica",
+      "tipo_slide": "chat",
+      "mensaje": "¿Siempre te vistes así o fue solo para la foto?"
+    },
+    {
+      "rol": "Chico",
+      "tipo_slide": "chat",
+      "mensaje": "Y si te digo que fue casual… 😏"
+    },
+    {
+      "rol": "Chica",
+      "tipo_slide": "chat",
+      "mensaje": "Mmmm… interesante 😌"
+    }
+  ]
+}
