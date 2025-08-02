@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat 9:16 solo mensajes</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+        body {
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Contenedor con ratio 9:16 */
+        .chat-container {
+            background: #000;
+            width: 360px;
+            height: 640px;
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Instagram Story Reply Header */
+        .story-reply-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #262626;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 2;
+        }
+
+        .story-reply-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid #0095f6;
+            padding: 2px;
+        }
+
+        .story-reply-info {
+            flex: 1;
+        }
+
+        .story-reply-username {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .story-reply-status {
+            font-size: 11px;
+            color: #a8a8a8;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .story-reply-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            padding: 0;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        /* Mensajes */
+        .messages-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 18px;
+            margin: 4px 0;
+            max-width: 75%;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.3;
+            position: relative;
+        }
+
+        /* Mensaje del chico */
+        .chico {
+            background: #0095f6;
+            color: white;
+            align-self: flex-end;
+            margin-left: 20%;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Mensaje de la chica */
+        .chica {
+            background: #262626;
+            color: white;
+            align-self: flex-start;
+            margin-right: 20%;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Story preview container */
+        .story-preview {
+            position: relative;
+            display: flex;
+            margin: 8px 0 7px 0;
+            /* Set bottom margin to 7px */
+            align-self: flex-end;
+            /* Align to the right like Instagram */
+        }
+
+        .story-preview-container {
+            position: relative;
+            width: 84.375px;
+            /* 150 * (9/16) = 84.375px for 9:16 aspect ratio */
+        }
+
+        .story-sidebar {
+            width: 3px;
+            height: 150px;
+            background-color: #2f2f2f;
+            border-radius: 1.5px;
+            margin-left: 4px;
+            align-self: flex-end;
+            margin-bottom: 2px;
+        }
+
+        .story-preview-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            max-width: 100%;
+        }
+
+        .story-preview-label {
+            color: #a8a8a8;
+            font-size: 9px;
+            margin-bottom: 4px;
+            text-align: right;
+            white-space: nowrap;
+            width: auto;
+            display: inline-block;
+            padding-right: 4px;
+            letter-spacing: 0.2px;
+        }
+
+        .story-preview-image {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            /* Fixed height as requested */
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #2f2f2f;
+        }
+
+        .story-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* First message styling for story reply */
+        .story-reply-message {
+            margin-top: 0;
+            /* Removed top margin since we're controlling spacing from the preview */
+            position: relative;
+        }
+
+        .typing-indicator {
+            display: flex;
+            padding: 10px 14px;
+            align-items: center;
+            background: #262626;
+            border-radius: 18px;
+            align-self: flex-start;
+            margin: 4px 0;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #a8a8a8;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.5s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-4px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <!-- Instagram Story Reply Header -->
+        <div class="story-reply-header">
+            <img src="https://i.pravatar.cc/150?img=1" alt="User" class="story-reply-avatar">
+            <div class="story-reply-info">
+                <h3 class="story-reply-username">maria_fernanda</h3>
+                <p class="story-reply-status">Respondiendo a tu historia</p>
+            </div>
+            <button class="story-reply-close">×</button>
+        </div>
+
+        <div class="messages-container" id="chat">
+            <!-- Messages will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        const data = {
+            "slides": [
+                {
+                    "rol": "Chico",
+                    "tipo_slide": "chat",
+                    "mensaje": "Ese outfit 👌🔥",
+                    "isStoryReply": true
+                },
+                {
+                    "rol": "Chica",
+                    "tipo_slide": "chat",
+                    "mensaje": "Jajaja gracias 😅"
+                },
+                {
+                    "rol": "Chica",
+                    "tipo_slide": "chat",
+                    "mensaje": "¿Siempre te vistes así o fue solo para la foto?"
+                },
+                {
+                    "rol": "Chico",
+                    "tipo_slide": "chat",
+                    "mensaje": "Y si te digo que fue casual… 😏"
+                },
+                {
+                    "rol": "Chica",
+                    "tipo_slide": "chat",
+                    "mensaje": "Mmmm… interesante 😌"
+                }
+            ]
+        };
+
+        const container = document.getElementById("chat");
+        let messageIndex = 0;
+
+        function addMessage() {
+            if (messageIndex >= data.slides.length) return;
+
+            const slide = data.slides[messageIndex];
+
+            if (slide.tipo_slide === "chat") {
+                // Create message container
+                const messageContainer = document.createElement("div");
+                messageContainer.classList.add("message");
+
+                // Add story preview for first message
+                if (slide.isStoryReply) {
+                    messageContainer.classList.add("story-reply-message");
+
+                    // Create story preview
+                    const storyPreview = document.createElement("div");
+                    storyPreview.className = "story-preview";
+                    storyPreview.innerHTML = `
+                        <div class="story-preview-container">
+                            <div class="story-preview-content">
+                                <div class="story-preview-label">You replied to their story</div>
+                                <div class="story-preview-image">
+                                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" alt="Story preview">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="story-sidebar"></div>
+                    `;
+                    container.appendChild(storyPreview);
+                }
+
+                // Add role class
+                if (slide.rol === "Chico") messageContainer.classList.add("chico");
+                if (slide.rol === "Chica") messageContainer.classList.add("chica");
+
+                // Set message content
+                messageContainer.textContent = slide.mensaje;
+
+                // Add typing indicator for the girl's messages (except first one)
+                if (messageIndex > 0 && slide.rol === "Chica") {
+                    const typing = document.createElement("div");
+                    typing.className = "typing-indicator";
+                    typing.innerHTML = `
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    `;
+                    container.appendChild(typing);
+
+                    // Remove typing indicator and show message after delay
+                    setTimeout(() => {
+                        typing.remove();
+                        container.appendChild(messageContainer);
+                        container.scrollTop = container.scrollHeight;
+                    }, 1000);
+                } else {
+                    container.appendChild(messageContainer);
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+
+            messageIndex++;
+
+            // Schedule next message
+            if (messageIndex < data.slides.length) {
+                setTimeout(addMessage, messageIndex === 1 ? 1500 : 2000);
+            }
+        }
+
+        // Start the conversation
+        setTimeout(addMessage, 500);
+
+        // Close button functionality
+        document.querySelector('.story-reply-close').addEventListener('click', function () {
+            // Add close animation or navigation here
+            console.log('Close button clicked');
+        });
+    </script>
+</body>
+
+</html>
