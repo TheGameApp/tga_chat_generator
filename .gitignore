@@ -1,0 +1,38 @@
+# Entorno virtual
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Variables de entorno
+.env
+
+# Archivos de desarrollo
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Directorios de caché
+.pytest_cache/
+.mypy_cache/
+
+# Archivos de base de datos
+*.db
+*.sqlite3
+
+# Archivos de entorno de Python
+*.env
+
+# Archivos de entorno de Node.js
+node_modules/
+npm-debug.log*
+
+# Directorios de build
+dist/
+build/
+*.egg-info/
