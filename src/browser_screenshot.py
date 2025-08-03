@@ -42,7 +42,8 @@ def capture_webpage(
     device_type: Literal['mobile', 'tablet', 'desktop'] = 'desktop',
     device_name: Optional[str] = None,
     full_page: bool = True,
-    wait_for_load: bool = True
+    wait_for_load: bool = True,
+    zoom_level: float = 1.0
 ) -> None:
     """
     Capture a high-quality screenshot of a webpage using Playwright.
@@ -92,14 +93,25 @@ def capture_webpage(
         }
     }
 
-    # Select device profile
+    # Select device profile and create a copy to modify
     profile = DEVICE_PROFILES.get(device_name or device_type, DEVICE_PROFILES['desktop']).copy()
     
-    # Override dimensions if explicitly provided
+    # Set higher resolution for better quality
+    quality_multiplier = 2  # Double the resolution for better quality
+    
+    # Override dimensions if explicitly provided, otherwise use device profile with quality multiplier
     if viewport_width:
         profile['width'] = viewport_width
+    else:
+        profile['width'] *= quality_multiplier
+        
     if viewport_height:
         profile['height'] = viewport_height
+    else:
+        profile['height'] *= quality_multiplier
+    
+    # Increase device scale factor for better quality
+    profile['device_scale_factor'] = 2.0
     
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -130,7 +142,15 @@ def capture_webpage(
             if wait_for_load:
                 page.wait_for_timeout(2000)  # Additional wait for dynamic content
             
-            print(f"Capturing screenshot to {output_path}...")
+            # Apply zoom if specified
+            if zoom_level != 1.0:
+                print(f"Applying zoom level: {zoom_level}x")
+                page.evaluate(f"document.body.style.zoom = '{zoom_level}'")
+            
+            # Wait for any potential zoom-related rendering
+            page.wait_for_timeout(1000)
+            
+            print(f"Capturing high-quality screenshot to {output_path}...")
             page.screenshot(
                 path=output_path,
                 full_page=full_page,
@@ -154,23 +174,25 @@ if __name__ == "__main__":
     Uncomment and modify the examples below to test different configurations.
     """
     
-    # Example 1: Desktop screenshot
-    # capture_webpage(
-    #     url="https://example.com",
-    #     output_path="desktop_screenshot.jpg",
-    #     viewport_width=1920,
-    #     viewport_height=1080,
-    #     device_scale_factor=2.0,
-    #     quality=95
-    # )
+    # Example 1: Desktop screenshot with 2x zoom
+    capture_webpage(
+        url="http://127.0.0.1:8000/",
+        output_path="desktop_screenshot.jpg",
+        viewport_width=1920,
+        viewport_height=1080,
+        device_scale_factor=2.0,
+        quality=95,
+        zoom_level=2.0  # 2x zoom for higher quality
+    )
     
-    # Example 2: Mobile device screenshot
-    # capture_webpage(
-    #     url="https://example.com/mobile",
-    #     output_path="mobile_screenshot.jpg",
-    #     device_name='iphone_13_pro',
-    #     quality=95
-    # )
+    # Example 2: Mobile device screenshot with 1.5x zoom
+    capture_webpage(
+        url="http://127.0.0.1:8000/",
+        output_path="mobile_screenshot.jpg",
+        device_name='iphone_13_pro',
+        quality=95,
+        zoom_level=2  # 1.5x zoom for mobile
+    )
     
     # Example 3: Custom viewport with high quality
     # capture_webpage(

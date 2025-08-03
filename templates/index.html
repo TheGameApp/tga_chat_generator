@@ -281,99 +281,52 @@
         
         // Función para capturar la conversación
         async function captureConversation(showAlert = true) {
-            let captureBtn = document.getElementById('captureBtn');
-            let loadingIndicator = null;
+            const captureBtn = document.getElementById('captureBtn');
+            const messagesContainer = document.querySelector('.messages-container');
+            
+            // Mostrar indicador de carga
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'loading-indicator';
+            loadingIndicator.textContent = 'Capturando...';
+            document.body.appendChild(loadingIndicator);
             
             try {
-                // Mostrar indicador de carga
-                if (showAlert) {
-                    loadingIndicator = document.createElement('div');
-                    loadingIndicator.style.position = 'fixed';
-                    loadingIndicator.style.top = '10px';
-                    loadingIndicator.style.right = '10px';
-                    loadingIndicator.style.padding = '10px 20px';
-                    loadingIndicator.style.background = 'rgba(0,0,0,0.8)';
-                    loadingIndicator.style.color = 'white';
-                    loadingIndicator.style.borderRadius = '5px';
-                    loadingIndicator.style.zIndex = '10000';
-                    loadingIndicator.textContent = 'Capturando conversación...';
-                    document.body.appendChild(loadingIndicator);
-                }
+                // Deshabilitar el botón mientras se procesa
+                if (captureBtn) captureBtn.disabled = true;
                 
-                if (captureBtn) {
-                    captureBtn.textContent = 'Capturando...';
-                    captureBtn.disabled = true;
-                }
+                // Obtener la URL actual
+                const currentUrl = window.location.href;
                 
-                // Esperar a que todos los mensajes estén visibles
-                await waitForAllMessages();
-                
-                // Pequeña pausa para asegurar que todo esté renderizado
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Capturar solo el contenedor del chat
-                const canvas = await html2canvas(container, {
-                    scale: 2,  // Mejor calidad
-                    backgroundColor: '#000000',
-                    logging: false,
-                    useCORS: true,
-                    allowTaint: true,
-                    scrollY: -window.scrollY,  // Asegurar que se capture la posición actual
-                    onclone: (clonedDoc) => {
-                        // Asegurarse de que los estilos se apliquen correctamente en el clon
-                        const style = clonedDoc.createElement('style');
-                        style.textContent = `
-                            body { background: #000 !important; }
-                            .chat-container { background: #000 !important; }
-                        `;
-                        clonedDoc.head.appendChild(style);
-                    }
-                });
-
-                // Convertir a imagen
-                const imageData = canvas.toDataURL('image/png');
-                
-                // Generar nombre de archivo con timestamp
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const filename = `captura_${timestamp}.png`;
-                
-                // Enviar al servidor
-                const response = await fetch('/save-screenshot', {
+                // Enviar solicitud al servidor para capturar la pantalla
+                const response = await fetch('/capture-screenshot', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        image: imageData,
-                        filename: filename
+                    body: JSON.stringify({
+                        url: currentUrl,
+                        device_name: 'desktop',
+                        quality: 95,
+                        full_page: true
                     })
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || 'Error al guardar la captura');
-                }
-
+                
                 const result = await response.json();
                 
-                if (result.status === 'success') {
-                    console.log('Captura guardada:', result);
+                if (response.ok) {
                     if (showAlert) {
-                        showNotification('✅ Captura guardada correctamente', 3000);
+                        showNotification('✅ Captura guardada correctamente');
                     }
                     
-                    // Opcional: Descargar automáticamente la imagen
+                    // Descargar automáticamente la imagen
                     const link = document.createElement('a');
-                    link.href = imageData;
-                    link.download = result.filename || filename;
-                    document.body.appendChild(link);
+                    link.href = result.url;
+                    link.download = result.filename;
                     link.click();
-                    document.body.removeChild(link);
                     
                     return result;
                 } else {
-                    throw new Error(result.message || 'Error desconocido al guardar la captura');
+                    throw new Error(result.detail || 'Error desconocido al guardar la captura');
                 }
                 
             } catch (error) {
@@ -388,9 +341,7 @@
                 if (loadingIndicator && loadingIndicator.parentNode) {
                     loadingIndicator.remove();
                 }
-                
                 if (captureBtn) {
-                    captureBtn.textContent = '📸 Capturar Conversación';
                     captureBtn.disabled = false;
                 }
             }
