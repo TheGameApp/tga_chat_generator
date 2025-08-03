@@ -7,8 +7,10 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados con c
 - Interfaz web moderna y responsiva
 - Servidor rápido con FastAPI
 - Captura de pantalla del chat generado
-- Guardado automático de capturas en formato PNG
+- Guardado automático de capturas en formato PNG/JPEG
 - Apertura automática del navegador al iniciar el servidor
+- Módulo de captura de pantalla programática con Playwright
+- Soporte para diferentes dispositivos móviles y resoluciones
 - Fácil de configurar y desplegar
 
 ## 🛠️ Requisitos previos
@@ -16,8 +18,9 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados con c
 - Python 3.8 o superior
 - pip (gestor de paquetes de Python)
 - Navegador web moderno (Chrome, Firefox, Edge, Safari)
+- Playwright (se instala automáticamente con las dependencias)
 
-## 🚀 Instalación
+## 📦 Instalación
 
 1. **Clonar el repositorio**
    ```bash
@@ -41,34 +44,99 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados con c
    pip install -r requirements.txt
    ```
 
-## 🏃 Ejecución
-
-1. **Activar el entorno virtual** (si se usó)
+4. **Instalar navegadores para Playwright**
    ```bash
-   # En macOS/Linux
-   source venv/bin/activate
-
-   # En Windows
-   # .\venv\Scripts\activate
+   playwright install
    ```
 
-2. **Iniciar el servidor**
+## 🏃 Uso Básico
+
+### Interfaz Web
+1. **Iniciar el servidor**
    ```bash
    python main.py
    ```
-   
    El servidor se iniciará en `http://localhost:8000`
 
-3. **Abrir el navegador manualmente**
-   - Accede a `http://localhost:8000` en tu navegador
-   - O usa el siguiente comando para abrirlo automáticamente:
-     ```bash
-     curl http://localhost:8000/open-browser
-     ```
-   - También puedes visitar directamente en tu navegador:
-     ```
-     http://localhost:8000/open-browser
-     ```
+2. **Abrir en el navegador**
+   - Accede a `http://localhost:8000`
+   - O usa: `curl http://localhost:8000/open-browser`
+
+### Módulo de Captura Programática
+
+El módulo `browser_screenshot.py` permite capturar páginas web programáticamente:
+
+```python
+from src.browser_screenshot import capture_webpage
+
+# Captura una página web estándar
+capture_webpage(
+    url="https://ejemplo.com",
+    output_path="captura.png",
+    viewport_width=1920,
+    viewport_height=1080,
+    quality=95
+)
+
+# Captura en un dispositivo móvil específico
+capture_webpage(
+    url="https://ejemplo.com",
+    output_path="movil.png",
+    device_name='iphone_13_pro',  # Usa un perfil predefinido
+    quality=95
+)
+```
+
+#### Parámetros de `capture_webpage`:
+
+- `url` (str): URL de la página a capturar
+- `output_path` (str): Ruta para guardar la captura (por defecto: "screenshot.png")
+- `viewport_width` (int, opcional): Ancho del viewport en píxeles
+- `viewport_height` (int, opcional): Alto del viewport en píxeles
+- `device_scale_factor` (float): Factor de escala para pantallas de alta densidad (por defecto: 2.0)
+- `quality` (int): Calidad de la imagen (1-100) para formato JPEG
+- `device_type` (str): Tipo de dispositivo ('mobile', 'tablet', 'desktop')
+- `device_name` (str, opcional): Nombre del perfil de dispositivo predefinido
+- `full_page` (bool): Si es True, captura toda la página desplazable
+- `wait_for_load` (bool): Si es True, espera a que la red esté inactiva
+
+#### Dispositivos predefinidos:
+
+| Dispositivo           | Resolución  | Escala |
+|-----------------------|-------------|--------|
+| iPhone 13 Pro         | 390 × 844   | 3x     |
+| Samsung Galaxy S21     | 360 × 800   | 3x     |
+| Google Pixel 5        | 393 × 851   | 2.75x  |
+| iPhone SE             | 375 × 667   | 2x     |
+| iPad Air              | 1180 × 820  | 2x     |
+| Samsung Galaxy Tab S7  | 800 × 1280  | 2x     |
+
+## 🚨 Solución de problemas
+
+### Playwright no encuentra el navegador
+Si obtienes errores sobre navegadores no encontrados:
+```bash
+playwright install
+playwright install-deps  # Solo en Linux
+```
+
+### Puerto 8000 en uso
+```bash
+# En macOS/Linux
+lsof -i :8000 | grep LISTEN | awk '{print $2}' | xargs -I {} kill -9 {}
+```
+
+## 📁 Estructura del proyecto
+
+```
+tga_chat_generator/
+├── src/
+│   ├── __init__.py
+│   └── browser_screenshot.py  # Módulo de captura programática
+├── main.py                    # Aplicación principal de FastAPI
+├── requirements.txt           # Dependencias del proyecto
+└── README.md                  # Este archivo
+```
 
 ## 📝 Uso
 
