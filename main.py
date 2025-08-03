@@ -8,6 +8,7 @@ import uvicorn
 import base64
 import os
 import webbrowser
+import threading
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -106,19 +107,47 @@ async def save_screenshot(data: ScreenshotData):
         logger.error(f"Error en save_screenshot: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-def open_browser():
-    import time
-    time.sleep(1)  # Esperar un momento para que el servidor se inicie
-    url = "http://localhost:8000"
-    webbrowser.open(url)
-    print(f"Navegador abierto en {url}")
+class BrowserResponse(BaseModel):
+    status: str
+    message: str
+    url: str
+
+@app.get("/open-browser", response_model=BrowserResponse)
+async def open_browser_endpoint(request: Request):
+    """
+    Endpoint para abrir el navegador automáticamente.
+    Devuelve la URL donde se abrió el navegador.
+    """
+    try:
+        # Construir la URL completa incluyendo el esquema y el host
+        url = f"{request.url.scheme}://{request.client.host}:{request.url.port}"
+        
+        # Usar un hilo para no bloquear la respuesta
+        def _open_browser():
+            import time
+            time.sleep(1)  # Pequeña pausa
+            webbrowser.open(url)
+            logger.info(f"Navegador abierto en {url}")
+        
+        threading.Thread(target=_open_browser).start()
+        
+        return {
+            "status": "success",
+            "message": "Navegador abierto exitosamente",
+            "url": url
+        }
+        
+    except Exception as e:
+        logger.error(f"Error al abrir el navegador: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al abrir el navegador: {str(e)}"
+        )
 
 if __name__ == "__main__":
-    import threading
-    
-    # Iniciar el navegador en un hilo separado
-    threading.Thread(target=open_browser).start()
+    import uvicorn
     
     # Iniciar el servidor
-    print("Iniciando servidor en http://localhost:8000...")
+    print("Iniciando servidor en http://localhost:8000")
+    print("Para abrir el navegador automáticamente, visita: http://localhost:8000/open-browser")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

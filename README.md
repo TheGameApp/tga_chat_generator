@@ -57,7 +57,18 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados con c
    python main.py
    ```
    
-   El servidor se iniciará en `http://localhost:8000` y se abrirá automáticamente en tu navegador predeterminado.
+   El servidor se iniciará en `http://localhost:8000`
+
+3. **Abrir el navegador manualmente**
+   - Accede a `http://localhost:8000` en tu navegador
+   - O usa el siguiente comando para abrirlo automáticamente:
+     ```bash
+     curl http://localhost:8000/open-browser
+     ```
+   - También puedes visitar directamente en tu navegador:
+     ```
+     http://localhost:8000/open-browser
+     ```
 
 ## 📝 Uso
 
@@ -92,6 +103,41 @@ tga_chat_generator/
 ├── templates/         # Plantillas HTML
 │   └── index.html     # Plantilla principal
 └── screenshots/       # Carpeta donde se guardan las capturas
+```
+
+## 🌐 Endpoints de la API
+
+### `GET /open-browser`
+Abre automáticamente el navegador predeterminado en la aplicación.
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Navegador abierto exitosamente",
+  "url": "http://127.0.0.1:8000"
+}
+```
+
+**Ejemplo de uso con curl:**
+```bash
+curl http://localhost:8000/open-browser
+```
+
+### `POST /save-screenshot`
+Guarda una captura de pantalla del chat.
+
+**Parámetros (JSON):**
+- `image` (string): Datos de la imagen en formato base64
+- `filename` (string, opcional): Nombre personalizado para el archivo
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "status": "success",
+  "filename": "screenshot_20230802_123456.png",
+  "path": "/ruta/completa/screenshots/screenshot_20230802_123456.png"
+}
 ```
 
 ## 📦 Dependencias principales
