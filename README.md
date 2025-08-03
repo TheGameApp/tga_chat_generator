@@ -1,17 +1,21 @@
 # TGA Chat Generator
 
-Aplicación web desarrollada con FastAPI para generar chats personalizados.
+Aplicación web desarrollada con FastAPI para generar chats personalizados con captura de pantalla.
 
 ## 🚀 Características
 
 - Interfaz web moderna y responsiva
 - Servidor rápido con FastAPI
+- Captura de pantalla del chat generado
+- Guardado automático de capturas en formato PNG
+- Apertura automática del navegador al iniciar el servidor
 - Fácil de configurar y desplegar
 
 ## 🛠️ Requisitos previos
 
 - Python 3.8 o superior
 - pip (gestor de paquetes de Python)
+- Navegador web moderno (Chrome, Firefox, Edge, Safari)
 
 ## 🚀 Instalación
 
@@ -21,7 +25,7 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados.
    cd tga_chat_generator
    ```
 
-2. **Crear y activar entorno virtual**
+2. **Crear y activar entorno virtual** (recomendado)
    ```bash
    # En macOS/Linux
    python -m venv venv
@@ -39,7 +43,7 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados.
 
 ## 🏃 Ejecución
 
-1. **Activar el entorno virtual** (si no está activado)
+1. **Activar el entorno virtual** (si se usó)
    ```bash
    # En macOS/Linux
    source venv/bin/activate
@@ -48,66 +52,55 @@ Aplicación web desarrollada con FastAPI para generar chats personalizados.
    # .\venv\Scripts\activate
    ```
 
-2. **Iniciar el servidor de desarrollo**
+2. **Iniciar el servidor**
    ```bash
-   uvicorn main:app --reload
+   python main.py
    ```
+   
+   El servidor se iniciará en `http://localhost:8000` y se abrirá automáticamente en tu navegador predeterminado.
 
-3. **Abrir en el navegador**
-   Abre tu navegador y visita:
-   ```
-   http://127.0.0.1:8000
-   ```
+## 📝 Uso
+
+1. Una vez que la aplicación se abra en tu navegador, verás la interfaz del generador de chat.
+2. Personaliza el chat según tus necesidades.
+3. Haz clic en el botón de captura para guardar una imagen del chat.
+4. Las capturas se guardan automáticamente en la carpeta `screenshots/`.
+
+## 🚨 Solución de problemas
+
+### Puerto 8000 en uso
+Si el puerto 8000 está en uso, puedes detener el proceso que lo está usando con:
+
+```bash
+# En macOS/Linux
+lsof -i :8000 | grep LISTEN | awk '{print $2}' | xargs -I {} kill -9 {}
+```
+
+### No se abre el navegador automáticamente
+Si el navegador no se abre automáticamente, puedes acceder manualmente a:
+```
+http://localhost:8000
+```
 
 ## 📁 Estructura del proyecto
 
 ```
 tga_chat_generator/
-├── static/           # Archivos estáticos (CSS, JS, imágenes)
-├── templates/        # Plantillas HTML
-│   └── index.html    # Página principal
-├── main.py           # Aplicación principal de FastAPI
-├── requirements.txt  # Dependencias del proyecto
-└── README.md         # Este archivo
+├── main.py            # Aplicación principal de FastAPI
+├── requirements.txt   # Dependencias del proyecto
+├── static/            # Archivos estáticos (CSS, JS, imágenes)
+├── templates/         # Plantillas HTML
+│   └── index.html     # Plantilla principal
+└── screenshots/       # Carpeta donde se guardan las capturas
 ```
 
-## 💬 Estructura de la Conversación
+## 📦 Dependencias principales
 
-El chat se genera a partir de un archivo JSON ubicado en `static/js/conversation.json`. Puedes modificar este archivo para personalizar la conversación.
+- FastAPI - Framework web moderno y rápido
+- Uvicorn - Servidor ASGI
+- Jinja2 - Motor de plantillas
+- python-multipart - Para manejar datos de formulario
 
-### Estructura del JSON
-
-```json
-{
-  "slides": [
-    {
-      "rol": "Chico",
-      "tipo_slide": "chat",
-      "mensaje": "Mensaje del chat",
-      "isStoryReply": true  // Opcional: true solo para el primer mensaje
-    },
-    // ... más mensajes
-  ]
-}
-```
-
-### Campos disponibles
-
-- `rol`: Puede ser "Chico" o "Chica" para alinear los mensajes a la derecha o izquierda respectivamente.
-- `tipo_slide`: Actualmente solo soporta "chat".
-- `mensaje`: El texto del mensaje a mostrar.
-- `isStoryReply`: (Opcional) Si es `true`, muestra una vista previa de la historia encima del mensaje.
-
-### Ejemplo de uso
-
-Para agregar un nuevo mensaje, simplemente añade un nuevo objeto al array `slides`:
-
-```json
-{
-  "rol": "Chica",
-  "tipo_slide": "chat",
-  "mensaje": "¡Hola! ¿Cómo estás?"
-}
 ```
 
 ## 🔧 Variables de entorno

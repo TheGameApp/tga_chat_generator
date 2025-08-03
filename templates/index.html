@@ -252,33 +252,141 @@
         </div>
     </div>
 
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
-        // Variable para almacenar los datos de la conversación
-        let data = { slides: [] };
+        // Variables globales
+        const data = { slides: [] };
+        const container = document.getElementById("chat");
+        let messageIndex = 0;
+        
+        // Crear y estilizar el botón de captura
+        const captureBtn = document.createElement('button');
+        captureBtn.textContent = '📸 Capturar Conversación';
+        Object.assign(captureBtn.style, {
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            padding: '10px 15px',
+            background: '#0095f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            zIndex: '1000',
+            fontFamily: 'Roboto, sans-serif',
+            fontSize: '14px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+        });
+        document.body.appendChild(captureBtn);
+        
+        // Función para capturar la conversación
+        async function captureConversation(showAlert = true) {
+            try {
+                if (captureBtn) {
+                    captureBtn.textContent = 'Capturando...';
+                    captureBtn.disabled = true;
+                }
+                
+                // Pequeña pausa para asegurar que todo esté renderizado
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Capturar solo el contenedor del chat
+                const canvas = await html2canvas(container, {
+                    scale: 2,  // Mejor calidad
+                    backgroundColor: '#000000',
+                    logging: false,
+                    useCORS: true,
+                    useCORS: true,
+                    allowTaint: true,
+                    scrollY: -window.scrollY  // Asegurar que se capture la posición actual
+                });
+
+                // Convertir a imagen y enviar al servidor
+                const imageData = canvas.toDataURL('image/png');
+                
+                const response = await fetch('/save-screenshot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success' && showAlert) {
+                    console.log(`Captura guardada automáticamente como: ${result.filename}`);
+                    if (showAlert) {
+                        alert(`¡Captura guardada como ${result.filename} en la carpeta screenshots/`);
+                    }
+                }
+                return result;
+            } catch (error) {
+                console.error('Error al capturar:', error);
+                if (showAlert) {
+                    alert('Error al guardar la captura: ' + error.message);
+                }
+                throw error;
+            } finally {
+                if (captureBtn) {
+                    captureBtn.textContent = '📸 Capturar Conversación';
+                    captureBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Event listener para el botón de captura
+        captureBtn.addEventListener('click', captureConversation);
 
         // Función para cargar el JSON externo
         async function loadConversation() {
             try {
-                const response = await fetch('/static/js/conversation.json');
+                console.log('Intentando cargar la conversación...');
+                const response = await fetch('/static/js/conversation.json', {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                console.log('Estado de la respuesta:', response.status, response.statusText);
+                
                 if (!response.ok) {
-                    throw new Error('Error al cargar la conversación');
+                    const errorText = await response.text();
+                    console.error('Error en la respuesta:', errorText);
+                    throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
                 }
-                data = await response.json();
-                // Iniciar la conversación una vez cargados los datos
+                
+                const responseData = await response.json();
+                console.log('Datos cargados:', responseData);
+                
+                // Verificar la estructura de los datos
+                if (!responseData.slides || !Array.isArray(responseData.slides)) {
+                    throw new Error('Formato de datos inválido: se esperaba un array en la propiedad "slides"');
+                }
+                
+                // Asignar los datos y comenzar la conversación
+                data.slides = responseData.slides;
+                messageIndex = 0; // Reiniciar el índice
                 addMessage();
+                
             } catch (error) {
-                console.error('Error:', error);
-                // Mostrar un mensaje de error en el chat si falla la carga
-                const container = document.getElementById("chat");
+                console.error('Error al cargar la conversación:', error);
+                // Mostrar un mensaje de error detallado en el chat
+                const errorContainer = document.getElementById("chat");
                 const errorMsg = document.createElement("div");
                 errorMsg.className = "message chico";
-                errorMsg.textContent = "Error al cargar la conversación";
-                container.appendChild(errorMsg);
+                errorMsg.textContent = `Error: ${error.message || 'No se pudo cargar la conversación'}`;
+                errorContainer.appendChild(errorMsg);
+                
+                // Mostrar mensaje de error en la consola del navegador
+                console.error('Detalles del error:', {
+                    error: error.toString(),
+                    stack: error.stack,
+                    data: data
+                });
             }
         }
-
-        const container = document.getElementById("chat");
-        let messageIndex = 0;
 
         function addMessage() {
             if (messageIndex >= data.slides.length) return;
@@ -350,8 +458,52 @@
             }
         }
 
-        // Cargar la conversación al iniciar
-        document.addEventListener('DOMContentLoaded', loadConversation);
+        // Función para verificar si todos los mensajes están visibles
+        function allMessagesVisible() {
+            const messages = container.querySelectorAll('.message');
+            return messages.length > 0 && 
+                   Array.from(messages).every(msg => {
+                       const rect = msg.getBoundingClientRect();
+                       return rect.height > 0 && rect.width > 0;
+                   });
+        }
+
+        // Función para esperar a que todos los mensajes estén visibles
+        async function waitForAllMessages() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (allMessagesVisible()) {
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        // Función para iniciar la conversación
+        async function initConversation() {
+            try {
+                await loadConversation();
+                
+                // Esperar a que todos los mensajes estén visibles
+                await waitForAllMessages();
+                
+                // Pequeña pausa adicional para asegurar que todo esté renderizado
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                console.log('Iniciando captura automática...');
+                const result = await captureConversation(false);
+                console.log('Captura automática completada:', result);
+                
+            } catch (error) {
+                console.error('Error al iniciar la conversación:', error);
+            }
+        }
+
+        // Iniciar todo cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', initConversation);
 
         // Close button functionality
         document.querySelector('.story-reply-close').addEventListener('click', function () {
