@@ -23,6 +23,17 @@ Example usage:
 
 from playwright.sync_api import sync_playwright
 from typing import Optional, Literal, Dict, Any, TypedDict
+from enum import Enum
+
+class DeviceType(str, Enum):
+    """Supported device types for screenshots."""
+    IPHONE_13_PRO = "iphone_13_pro"
+    SAMSUNG_GALAXY_S21 = "samsung_galaxy_s21"
+    PIXEL_5 = "pixel_5"
+    IPHONE_SE = "iphone_se"
+    IPAD_AIR = "ipad_air"
+    SAMSUNG_GALAXY_TAB_S7 = "samsung_galaxy_tab_s7"
+    DESKTOP = "desktop"
 
 class DeviceConfig(TypedDict):
     """Configuration for a device profile."""
@@ -30,6 +41,25 @@ class DeviceConfig(TypedDict):
     height: int
     is_mobile: bool
     device_scale_factor: float
+
+# Device profiles database
+DEVICE_PROFILES: Dict[str, DeviceConfig] = {
+    # Mobile Phones
+    DeviceType.IPHONE_13_PRO: {
+        'width': 390, 'height': 844, 'is_mobile': True, 'device_scale_factor': 3.0
+    },
+    DeviceType.SAMSUNG_GALAXY_S21: {
+        'width': 360, 'height': 800, 'is_mobile': True, 'device_scale_factor': 3.0
+    },
+    # Tablets
+    DeviceType.IPAD_AIR: {
+        'width': 1180, 'height': 820, 'is_mobile': True, 'device_scale_factor': 2.0
+    },
+    # Desktop (default)
+    DeviceType.DESKTOP: {
+        'width': 1920, 'height': 1080, 'is_mobile': False, 'device_scale_factor': 1.0
+    }
+}
 
 
 def capture_webpage(
@@ -39,8 +69,7 @@ def capture_webpage(
     viewport_height: Optional[int] = None,
     device_scale_factor: float = 2.0,
     quality: int = 90,
-    device_type: Literal['mobile', 'tablet', 'desktop'] = 'desktop',
-    device_name: Optional[str] = None,
+    device_type: str = DeviceType.DESKTOP,
     full_page: bool = True,
     wait_for_load: bool = True,
     zoom_level: float = 1.0
@@ -49,52 +78,23 @@ def capture_webpage(
     Capture a high-quality screenshot of a webpage using Playwright.
 
     Args:
-        url: The URL of the webpage to capture
-        output_path: Path to save the screenshot file (default: "screenshot.png")
-        viewport_width: Viewport width in pixels (overrides device preset)
-        viewport_height: Viewport height in pixels (overrides device preset)
-        device_scale_factor: Pixel ratio for high-DPI screens (default: 2.0)
-        quality: Image quality (1-100) for JPEG format (default: 90)
-        device_type: General device category (default: 'desktop')
-        device_name: Specific device profile to use
+        url: URL of the webpage to capture
+        output_path: Path to save the screenshot (default: 'screenshot.png')
+        viewport_width: Viewport width in pixels (overrides device default)
+        viewport_height: Viewport height in pixels (overrides device default)
+        device_scale_factor: Device scale factor (default: 2.0 for high DPI)
+        quality: Image quality (1-100) for JPEG (default: 90)
+        device_type: Device type from DeviceType enum (default: DESKTOP)
         full_page: Whether to capture the entire scrollable page (default: True)
         wait_for_load: Wait for network to be idle before capturing (default: True)
+        zoom_level: Zoom level for the screenshot (default: 1.0)
     """
-    # Device profiles database
-    DEVICE_PROFILES: Dict[str, DeviceConfig] = {
-        # Mobile Phones - High-end
-        'iphone_13_pro': {
-            'width': 390, 'height': 844, 'is_mobile': True, 'device_scale_factor': 3.0
-        },
-        'samsung_galaxy_s21': {
-            'width': 360, 'height': 800, 'is_mobile': True, 'device_scale_factor': 3.0
-        },
-        'pixel_5': {
-            'width': 393, 'height': 851, 'is_mobile': True, 'device_scale_factor': 2.75
-        },
-        'iphone_se': {
-            'width': 375, 'height': 667, 'is_mobile': True, 'device_scale_factor': 2.0
-        },
-        
-        # Tablets
-        'ipad_air': {
-            'width': 1180, 'height': 820, 'is_mobile': True, 'device_scale_factor': 2.0
-        },
-        'samsung_galaxy_tab_s7': {
-            'width': 800, 'height': 1280, 'is_mobile': True, 'device_scale_factor': 2.0
-        },
-        
-        # Desktop (default)
-        'desktop': {
-            'width': viewport_width or 1920,
-            'height': viewport_height or 1080,
-            'is_mobile': False,
-            'device_scale_factor': device_scale_factor
-        }
-    }
-
     # Select device profile and create a copy to modify
-    profile = DEVICE_PROFILES.get(device_name or device_type, DEVICE_PROFILES['desktop']).copy()
+    profile = DEVICE_PROFILES.get(DeviceType(device_type), DEVICE_PROFILES[DeviceType.DESKTOP]).copy()
+    
+    # Update device scale factor if provided
+    if device_scale_factor:
+        profile['device_scale_factor'] = device_scale_factor
     
     # Set higher resolution for better quality
     quality_multiplier = 2  # Double the resolution for better quality
@@ -178,6 +178,7 @@ if __name__ == "__main__":
     capture_webpage(
         url="http://127.0.0.1:8000/",
         output_path="desktop_screenshot.jpg",
+        device_type=DeviceType.DESKTOP,
         viewport_width=1920,
         viewport_height=1080,
         device_scale_factor=2.0,
@@ -185,13 +186,13 @@ if __name__ == "__main__":
         zoom_level=2.0  # 2x zoom for higher quality
     )
     
-    # Example 2: Mobile device screenshot with 1.5x zoom
+    # Example 2: Mobile device screenshot with 2x zoom
     capture_webpage(
         url="http://127.0.0.1:8000/",
         output_path="mobile_screenshot.jpg",
-        device_name='iphone_13_pro',
+        device_type=DeviceType.IPHONE_13_PRO,
         quality=95,
-        zoom_level=2  # 1.5x zoom for mobile
+        zoom_level=2.0
     )
     
     # Example 3: Custom viewport with high quality
