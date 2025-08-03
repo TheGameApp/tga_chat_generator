@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import base64
@@ -9,9 +10,23 @@ import os
 import webbrowser
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # Crear la aplicación FastAPI
 app = FastAPI(title="TGA Chat Generator")
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, reemplazar con los dominios permitidos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Configurar el directorio de plantillas
 templates = Jinja2Templates(directory="templates")
@@ -43,6 +58,7 @@ async def debug_static(file_path: str):
 
 class ScreenshotData(BaseModel):
     image: str
+    filename: str = None
 
 # Ruta principal que sirve el index.html
 @app.get("/", response_class=HTMLResponse)
@@ -57,18 +73,37 @@ async def save_screenshot(data: ScreenshotData):
         screenshots_dir = Path("screenshots")
         screenshots_dir.mkdir(exist_ok=True)
         
-        # Generar nombre de archivo con timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"screenshot_{timestamp}.png"
+        # Usar el nombre de archivo proporcionado o generar uno con timestamp
+        if not data.filename:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshot_{timestamp}.png"
+        else:
+            # Asegurar que el nombre del archivo sea seguro
+            safe_filename = "".join(c for c in data.filename if c.isalnum() or c in ('-', '_', '.')).rstrip()
+            filename = f"screenshot_{safe_filename}.png"
+            
         filepath = screenshots_dir / filename
         
-        # Decodificar y guardar la imagen
-        image_data = data.image.split(",")[1]  # Remover el prefijo 'data:image/png;base64,'
-        with open(filepath, "wb") as f:
-            f.write(base64.b64decode(image_data))
+        # Verificar que los datos de la imagen sean válidos
+        if not data.image or "," not in data.image:
+            logger.error("Formato de imagen no válido")
+            raise HTTPException(status_code=400, detail="Formato de imagen no válido")
             
-        return {"status": "success", "filename": filename}
+        # Decodificar y guardar la imagen
+        try:
+            image_data = data.image.split(",")[1]  # Remover el prefijo 'data:image/png;base64,'
+            with open(filepath, "wb") as f:
+                f.write(base64.b64decode(image_data))
+                
+            logger.info(f"Captura guardada exitosamente: {filename}")
+            return {"status": "success", "filename": filename, "path": str(filepath.absolute())}
+            
+        except Exception as e:
+            logger.error(f"Error al guardar la imagen: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error al guardar la imagen: {str(e)}")
+            
     except Exception as e:
+        logger.error(f"Error en save_screenshot: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 def open_browser():

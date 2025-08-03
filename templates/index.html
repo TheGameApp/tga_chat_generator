@@ -281,11 +281,32 @@
         
         // Función para capturar la conversación
         async function captureConversation(showAlert = true) {
+            let captureBtn = document.getElementById('captureBtn');
+            let loadingIndicator = null;
+            
             try {
+                // Mostrar indicador de carga
+                if (showAlert) {
+                    loadingIndicator = document.createElement('div');
+                    loadingIndicator.style.position = 'fixed';
+                    loadingIndicator.style.top = '10px';
+                    loadingIndicator.style.right = '10px';
+                    loadingIndicator.style.padding = '10px 20px';
+                    loadingIndicator.style.background = 'rgba(0,0,0,0.8)';
+                    loadingIndicator.style.color = 'white';
+                    loadingIndicator.style.borderRadius = '5px';
+                    loadingIndicator.style.zIndex = '10000';
+                    loadingIndicator.textContent = 'Capturando conversación...';
+                    document.body.appendChild(loadingIndicator);
+                }
+                
                 if (captureBtn) {
                     captureBtn.textContent = 'Capturando...';
                     captureBtn.disabled = true;
                 }
+                
+                // Esperar a que todos los mensajes estén visibles
+                await waitForAllMessages();
                 
                 // Pequeña pausa para asegurar que todo esté renderizado
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -296,42 +317,116 @@
                     backgroundColor: '#000000',
                     logging: false,
                     useCORS: true,
-                    useCORS: true,
                     allowTaint: true,
-                    scrollY: -window.scrollY  // Asegurar que se capture la posición actual
+                    scrollY: -window.scrollY,  // Asegurar que se capture la posición actual
+                    onclone: (clonedDoc) => {
+                        // Asegurarse de que los estilos se apliquen correctamente en el clon
+                        const style = clonedDoc.createElement('style');
+                        style.textContent = `
+                            body { background: #000 !important; }
+                            .chat-container { background: #000 !important; }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                    }
                 });
 
-                // Convertir a imagen y enviar al servidor
+                // Convertir a imagen
                 const imageData = canvas.toDataURL('image/png');
                 
+                // Generar nombre de archivo con timestamp
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `captura_${timestamp}.png`;
+                
+                // Enviar al servidor
                 const response = await fetch('/save-screenshot', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ image: imageData })
+                    body: JSON.stringify({ 
+                        image: imageData,
+                        filename: filename
+                    })
                 });
 
-                const result = await response.json();
-                if (result.status === 'success' && showAlert) {
-                    console.log(`Captura guardada automáticamente como: ${result.filename}`);
-                    if (showAlert) {
-                        alert(`¡Captura guardada como ${result.filename} en la carpeta screenshots/`);
-                    }
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || 'Error al guardar la captura');
                 }
-                return result;
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    console.log('Captura guardada:', result);
+                    if (showAlert) {
+                        showNotification('✅ Captura guardada correctamente', 3000);
+                    }
+                    
+                    // Opcional: Descargar automáticamente la imagen
+                    const link = document.createElement('a');
+                    link.href = imageData;
+                    link.download = result.filename || filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    return result;
+                } else {
+                    throw new Error(result.message || 'Error desconocido al guardar la captura');
+                }
+                
             } catch (error) {
                 console.error('Error al capturar:', error);
                 if (showAlert) {
-                    alert('Error al guardar la captura: ' + error.message);
+                    showNotification(`❌ Error: ${error.message}`, 5000, true);
                 }
                 throw error;
+                
             } finally {
+                // Limpiar
+                if (loadingIndicator && loadingIndicator.parentNode) {
+                    loadingIndicator.remove();
+                }
+                
                 if (captureBtn) {
                     captureBtn.textContent = '📸 Capturar Conversación';
                     captureBtn.disabled = false;
                 }
             }
+        }
+        
+        // Función para mostrar notificaciones
+        function showNotification(message, duration = 3000, isError = false) {
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.top = '10px';
+            notification.style.right = '10px';
+            notification.style.padding = '10px 20px';
+            notification.style.background = isError ? '#ff4444' : '#4CAF50';
+            notification.style.color = 'white';
+            notification.style.borderRadius = '5px';
+            notification.style.zIndex = '10000';
+            notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            notification.style.transition = 'opacity 0.3s';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Asegurarse de que se muestre antes de la animación
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Eliminar después de la duración
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, duration);
         }
         
         // Event listener para el botón de captura
