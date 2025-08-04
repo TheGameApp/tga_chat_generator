@@ -27,7 +27,7 @@
 
     <script>
         // Variables globales
-        const data = { slides: [] };
+        const data = { isStoryReply: false, slides: [] };
         const container = document.getElementById("chat");
         let messageIndex = 0;
 
@@ -62,6 +62,7 @@
 
                 // Asignar los datos y comenzar la conversación
                 data.slides = responseData.slides;
+                data.isStoryReply = responseData.isStoryReply;
                 messageIndex = 0; // Reiniciar el índice
                 addMessage();
 
@@ -94,7 +95,7 @@
                 messageContainer.classList.add("message");
 
                 // Add story preview for first message
-                if (slide.isStoryReply) {
+                if (data.isStoryReply && messageIndex === 0) {
                     messageContainer.classList.add("story-reply-message");
 
                     // Create story preview

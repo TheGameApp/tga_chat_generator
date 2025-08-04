@@ -1,16 +1,49 @@
 {
+  "isStoryReply": true,
   "slides": [
     {
       "rol": "Chico",
-      "tipo_slide": "chat",
-      "mensaje": "¡hey ¿Cómo estás?",
-      "isStoryReply": true
+      "mensaje": "¿Eso era una paella o un experimento científico? 😂"
     },
     {
       "rol": "Chica",
-      "tipo_slide": "chat",
-      "mensaje": "¡Muy bien, gracias! ¿Y tú?",
-      "isStoryReply": false
+      "mensaje": "Jajaja, ¿te atreverías a probarlo?"
+    },
+    {
+      "rol": "Narrativa",
+      "mensaje": "Pausa... este es el tipo de pregunta que te puede dejar en visto."
+    },
+    {
+      "rol": "Screenshot",
+      "mensaje": "¡Solo si me prometes que no lo cocinas tú! 😏"
+    },
+    {
+      "rol": "Chico",
+      "mensaje": "Claro, mis habilidades son más para el microondas. 😜"
+    },
+    {
+      "rol": "Chica",
+      "mensaje": "No sé si eso cuenta... 🤔"
+    },
+    {
+      "rol": "Narrativa",
+      "mensaje": "Esto huele a trampa... pero tal vez pueda darle la vuelta."
+    },
+    {
+      "rol": "Screenshot",
+      "mensaje": ""
+    },
+    {
+      "rol": "Chico",
+      "mensaje": "¿Y si lo hacemos juntos? ¡A ver quién lo arruina! 😉"
+    },
+    {
+      "rol": "Chica",
+      "mensaje": "Acepto el reto. Pero tú limpias después. 😏"
+    },
+    {
+      "rol": "Narrativa",
+      "mensaje": "No sé cómo se me ocurrió… pero funcionó 😉🔥"
     }
   ]
 }

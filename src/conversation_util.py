@@ -7,9 +7,9 @@ import json
 class Slide(BaseModel):
     rol: str
     mensaje: str
-    isStoryReply: bool = False
 
 class ConversationData(BaseModel):
+    isStoryReply: bool = False
     slides: List[Slide]
 
 
