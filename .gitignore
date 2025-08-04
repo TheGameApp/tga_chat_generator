@@ -193,3 +193,4 @@ dmypy.json
 
 # Screenshots directory
 screenshots/
+static/js/conversation.json

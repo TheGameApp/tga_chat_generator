@@ -6,7 +6,6 @@ import json
 
 class Slide(BaseModel):
     rol: str
-    tipo_slide: str
     mensaje: str
     isStoryReply: bool = False
 

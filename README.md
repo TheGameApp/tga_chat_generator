@@ -218,7 +218,6 @@ Guarda los datos de la conversación y toma una captura de pantalla del chat.
 - `conversation_data` (object, opcional): Datos de la conversación a guardar
   - `slides` (array): Lista de mensajes de la conversación
     - `rol` (string): Rol del remitente (ej: "Chico", "Chica")
-    - `tipo_slide` (string): Tipo de mensaje (ej: "chat")
     - `mensaje` (string): Contenido del mensaje
     - `isStoryReply` (boolean, opcional): Indica si es una respuesta a una historia
 
@@ -230,13 +229,11 @@ curl -X POST "http://localhost:8000/api/screenshot" \
     "slides": [
       {
         "rol": "Chico",
-        "tipo_slide": "chat",
         "mensaje": "¡Hola! ¿Cómo estás?",
         "isStoryReply": true
       },
       {
         "rol": "Chica",
-        "tipo_slide": "chat",
         "mensaje": "¡Muy bien, gracias! ¿Y tú?",
         "isStoryReply": false
       }
@@ -262,7 +259,6 @@ Obtiene los datos actuales de la conversación.
   "slides": [
     {
       "rol": "Chico",
-      "tipo_slide": "chat",
       "mensaje": "¡Hola! ¿Cómo estás?",
       "isStoryReply": true
     }

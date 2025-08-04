@@ -31,7 +31,7 @@
         const container = document.getElementById("chat");
         let messageIndex = 0;
 
-        
+
         // Función para cargar el JSON externo
         async function loadConversation() {
             try {
@@ -43,28 +43,28 @@
                         'Pragma': 'no-cache'
                     }
                 });
-                
+
                 console.log('Estado de la respuesta:', response.status, response.statusText);
-                
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('Error en la respuesta:', errorText);
                     throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
                 }
-                
+
                 const responseData = await response.json();
                 console.log('Datos cargados:', responseData);
-                
+
                 // Verificar la estructura de los datos
                 if (!responseData.slides || !Array.isArray(responseData.slides)) {
                     throw new Error('Formato de datos inválido: se esperaba un array en la propiedad "slides"');
                 }
-                
+
                 // Asignar los datos y comenzar la conversación
                 data.slides = responseData.slides;
                 messageIndex = 0; // Reiniciar el índice
                 addMessage();
-                
+
             } catch (error) {
                 console.error('Error al cargar la conversación:', error);
                 // Mostrar un mensaje de error detallado en el chat
@@ -73,7 +73,7 @@
                 errorMsg.className = "message chico";
                 errorMsg.textContent = `Error: ${error.message || 'No se pudo cargar la conversación'}`;
                 errorContainer.appendChild(errorMsg);
-                
+
                 // Mostrar mensaje de error en la consola del navegador
                 console.error('Detalles del error:', {
                     error: error.toString(),
@@ -88,7 +88,7 @@
 
             const slide = data.slides[messageIndex];
 
-            if (slide.tipo_slide === "chat") {
+            if (slide.rol === "Chico" || slide.rol === "Chica") {
                 // Create message container
                 const messageContainer = document.createElement("div");
                 messageContainer.classList.add("message");
@@ -134,9 +134,9 @@
 
                     // Se ha comentado el timeout para eliminar el delay
                     // setTimeout(() => {
-                        typing.remove();
-                        container.appendChild(messageContainer);
-                        container.scrollTop = container.scrollHeight;
+                    typing.remove();
+                    container.appendChild(messageContainer);
+                    container.scrollTop = container.scrollHeight;
                     // }, 1000);
                 } else {
                     container.appendChild(messageContainer);
@@ -156,11 +156,11 @@
         // Función para verificar si todos los mensajes están visibles
         function allMessagesVisible() {
             const messages = container.querySelectorAll('.message');
-            return messages.length > 0 && 
-                   Array.from(messages).every(msg => {
-                       const rect = msg.getBoundingClientRect();
-                       return rect.height > 0 && rect.width > 0;
-                   });
+            return messages.length > 0 &&
+                Array.from(messages).every(msg => {
+                    const rect = msg.getBoundingClientRect();
+                    return rect.height > 0 && rect.width > 0;
+                });
         }
 
         // Función para esperar a que todos los mensajes estén visibles
@@ -181,17 +181,17 @@
         async function initConversation() {
             try {
                 await loadConversation();
-                
+
                 // Esperar a que todos los mensajes estén visibles
                 await waitForAllMessages();
-                
+
                 // Pequeña pausa adicional para asegurar que todo esté renderizado
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
                 console.log('Iniciando captura automática...');
                 const result = await captureConversation(false);
                 console.log('Captura automática completada:', result);
-                
+
             } catch (error) {
                 console.error('Error al iniciar la conversación:', error);
             }
