@@ -1,29 +1,13 @@
-"""
-Webpage screenshot capture utility using Playwright.
-
-This module provides functionality to capture screenshots of web pages with
-support for various devices, viewport sizes, and quality settings.
-
-Example usage:
-    from browser_screenshot import capture_webpage
-    
-    # Basic usage
-    capture_webpage(
-        url="https://example.com",
-        output_path="screenshot.png"
-    )
-    
-    # With custom device settings
-    capture_webpage(
-        url="https://example.com",
-        output_path="mobile.png",
-        device_name='iphone_13_pro'
-    )
-"""
-
-from playwright.sync_api import sync_playwright
-from typing import Optional, Literal, Dict, Any, TypedDict
+from playwright.async_api import async_playwright, TimeoutError
 from enum import Enum
+import asyncio
+import logging
+from pathlib import Path
+from typing import Optional, Dict, Any, TypedDict
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class DeviceType(str, Enum):
     """Supported device types for screenshots."""
@@ -61,111 +45,153 @@ DEVICE_PROFILES: Dict[str, DeviceConfig] = {
     }
 }
 
+class ScreenshotTaker:
+    """Class to handle async screenshot capture with Playwright."""
+    
+    def __init__(self, headless: bool = True, timeout: int = 30000):
+        self.headless = headless
+        self.timeout = timeout
+        self.playwright = None
+        self.browser = None
+        self.context = None
+        self.page = None
 
-def capture_webpage(
-    url: str,
-    output_path: str = "screenshot.png",
-    viewport_width: Optional[int] = None,
-    viewport_height: Optional[int] = None,
-    device_scale_factor: float = 2.0,
-    quality: int = 90,
-    device_type: str = DeviceType.DESKTOP,
-    full_page: bool = True,
-    wait_for_load: bool = True,
-    zoom_level: float = 1.0
-) -> None:
-    """
-    Capture a high-quality screenshot of a webpage using Playwright.
+    async def __aenter__(self):
+        """Async context manager entry."""
+        await self.setup()
+        return self
 
-    Args:
-        url: URL of the webpage to capture
-        output_path: Path to save the screenshot (default: 'screenshot.png')
-        viewport_width: Viewport width in pixels (overrides device default)
-        viewport_height: Viewport height in pixels (overrides device default)
-        device_scale_factor: Device scale factor (default: 2.0 for high DPI)
-        quality: Image quality (1-100) for JPEG (default: 90)
-        device_type: Device type from DeviceType enum (default: DESKTOP)
-        full_page: Whether to capture the entire scrollable page (default: True)
-        wait_for_load: Wait for network to be idle before capturing (default: True)
-        zoom_level: Zoom level for the screenshot (default: 1.0)
-    """
-    # Select device profile and create a copy to modify
-    profile = DEVICE_PROFILES.get(DeviceType(device_type), DEVICE_PROFILES[DeviceType.DESKTOP]).copy()
-    
-    # Update device scale factor if provided
-    if device_scale_factor:
-        profile['device_scale_factor'] = device_scale_factor
-    
-    # Set higher resolution for better quality
-    quality_multiplier = 2  # Double the resolution for better quality
-    
-    # Override dimensions if explicitly provided, otherwise use device profile with quality multiplier
-    if viewport_width:
-        profile['width'] = viewport_width
-    else:
-        profile['width'] *= quality_multiplier
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.cleanup()
+
+    async def setup(self):
+        """Initialize Playwright and browser."""
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.webkit.launch(
+            headless=self.headless,
+            args=['--disable-web-security']  # Disable CORS for local development
+        )
+        return self
+
+    async def new_page(self):
+        """Create a new browser context and page."""
+        if not self.browser:
+            await self.setup()
+            
+        self.context = await self.browser.new_context(
+            viewport={
+                'width': 1920,
+                'height': 1080,
+                'deviceScaleFactor': 2.0
+            },
+            device_scale_factor=2.0
+        )
+        self.page = await self.context.new_page()
+        return self.page
+
+    async def capture(
+        self,
+        url: str,
+        output_path: str,
+        device_type: str = DeviceType.DESKTOP,
+        zoom_level: float = 1.0,
+        quality: int = 90,
+        wait_for_load: bool = True
+    ) -> str:
+        """
+        Capture a screenshot of the specified URL.
         
-    if viewport_height:
-        profile['height'] = viewport_height
-    else:
-        profile['height'] *= quality_multiplier
-    
-    # Increase device scale factor for better quality
-    profile['device_scale_factor'] = 2.0
-    
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        
+        Args:
+            url: The URL to capture
+            output_path: Where to save the screenshot
+            device_type: Device type from DeviceType enum
+            zoom_level: Zoom level for the page
+            quality: Image quality (1-100)
+            wait_for_load: Whether to wait for full page load
+            
+        Returns:
+            Path to the saved screenshot
+        """
         try:
-            context = browser.new_context(
-                viewport={
-                    'width': profile['width'],
-                    'height': profile['height']
-                },
-                device_scale_factor=profile['device_scale_factor'],
-                is_mobile=profile['is_mobile'],
-                has_touch=profile['is_mobile'],
-                ignore_https_errors=True,
-                user_agent=(
-                    'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 '
-                    '(KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'
-                    if profile['is_mobile'] else None
-                )
+            if not self.page:
+                await self.new_page()
+
+            device = DEVICE_PROFILES.get(device_type, DEVICE_PROFILES[DeviceType.DESKTOP])
+            
+            await self.page.set_viewport_size({
+                'width': device['width'],
+                'height': device['height'],
+                'deviceScaleFactor': device['device_scale_factor']
+            })
+
+            logger.info(f"Navigating to {url}...")
+            await self.page.goto(
+                url,
+                wait_until="networkidle" if wait_for_load else "domcontentloaded",
+                timeout=self.timeout
             )
-            
-            page = context.new_page()
-            page.set_default_timeout(60000)  # 60 second timeout
-            
-            print(f"Navigating to {url}...")
-            page.goto(url, wait_until="networkidle" if wait_for_load else "domcontentloaded")
             
             if wait_for_load:
-                page.wait_for_timeout(2000)  # Additional wait for dynamic content
-            
+                await asyncio.sleep(2)  # Additional wait for dynamic content
+
             # Apply zoom if specified
             if zoom_level != 1.0:
-                print(f"Applying zoom level: {zoom_level}x")
-                page.evaluate(f"document.body.style.zoom = '{zoom_level}'")
-            
-            # Wait for any potential zoom-related rendering
-            page.wait_for_timeout(1000)
-            
-            print(f"Capturing high-quality screenshot to {output_path}...")
-            page.screenshot(
-                path=output_path,
-                full_page=full_page,
-                type='jpeg' if output_path.lower().endswith(('.jpg', '.jpeg')) else 'png',
-                quality=quality if output_path.lower().endswith(('.jpg', '.jpeg')) else None,
+                logger.info(f"Applying zoom level: {zoom_level}x")
+                await self.page.evaluate(f"document.body.style.zoom = '{zoom_level}'")
+                await asyncio.sleep(1)  # Wait for zoom to apply
+
+            # Ensure directory exists
+            output_path = Path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            logger.info(f"Capturing screenshot to {output_path}...")
+            await self.page.screenshot(
+                path=str(output_path),
+                full_page=True,
+                type='jpeg' if str(output_path).lower().endswith(('.jpg', '.jpeg')) else 'png',
+                quality=quality if str(output_path).lower().endswith(('.jpg', '.jpeg')) else None,
                 scale='css'
             )
-            print("Screenshot saved successfully")
             
-        except Exception as error:
-            print(f"Error capturing screenshot: {error}")
+            logger.info("Screenshot saved successfully")
+            return str(output_path)
+
+        except Exception as e:
+            logger.error(f"Error capturing screenshot: {str(e)}")
             raise
-            
-        finally:
-            browser.close()
+
+    async def cleanup(self):
+        """Clean up resources."""
+        if hasattr(self, 'context') and self.context:
+            await self.context.close()
+        if hasattr(self, 'browser') and self.browser:
+            await self.browser.close()
+        if hasattr(self, 'playwright') and self.playwright:
+            await self.playwright.stop()
+
+# Helper function to maintain backward compatibility
+async def capture_webpage(
+    url: str,
+    output_path: str,
+    device_type: str = DeviceType.DESKTOP,
+    zoom_level: float = 1.0,
+    quality: int = 90,
+    wait_for_load: bool = True
+) -> str:
+    """
+    Helper function to maintain backward compatibility.
+    Creates a new ScreenshotTaker instance for a single capture.
+    """
+    async with ScreenshotTaker() as st:
+        return await st.capture(
+            url=url,
+            output_path=output_path,
+            device_type=device_type,
+            zoom_level=zoom_level,
+            quality=quality,
+            wait_for_load=wait_for_load
+        )
 
 # Example usage when run directly
 if __name__ == "__main__":
@@ -175,16 +201,16 @@ if __name__ == "__main__":
     """
     
     # Example 1: Desktop screenshot with 2x zoom
-    capture_webpage(
-        url="http://127.0.0.1:8000/",
-        output_path="desktop_screenshot.jpg",
-        device_type=DeviceType.DESKTOP,
-        viewport_width=1920,
-        viewport_height=1080,
-        device_scale_factor=2.0,
-        quality=95,
-        zoom_level=2.0  # 2x zoom for higher quality
-    )
+    # capture_webpage(
+    #     url="http://127.0.0.1:8000/",
+    #     output_path="desktop_screenshot.jpg",
+    #     device_type=DeviceType.DESKTOP,
+    #     viewport_width=1920,
+    #     viewport_height=1080,
+    #     device_scale_factor=2.0,
+    #     quality=95,
+    #     zoom_level=2.0  # 2x zoom for higher quality
+    # )
     
     # Example 2: Mobile device screenshot with 2x zoom
     capture_webpage(
