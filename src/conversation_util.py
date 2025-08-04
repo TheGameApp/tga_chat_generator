@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
 from pathlib import Path
