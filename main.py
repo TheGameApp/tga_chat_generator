@@ -76,15 +76,16 @@ async def take_screenshot(http_request: Request):
         if base_url.endswith('/'):
             base_url = base_url[:-1]  # Eliminar la barra final si existe
 
-        # Usar el nuevo ScreenshotTaker
-        async with ScreenshotTaker() as st:
+        # Usar el nuevo ScreenshotTaker con configuración mejorada de calidad
+        async with ScreenshotTaker(headless=True) as st:
             await st.capture(
                 url=base_url,
                 output_path=str(output_path),
                 device_type=DeviceType.IPHONE_13_PRO,
-                zoom_level=1,
-                quality=93,
-                wait_for_load=True
+                zoom_level=2.5,
+                quality=100,
+                wait_for_load=True,
+                wait_after_load=2000
             )
         
         # Devolver la URL relativa para acceder a la captura

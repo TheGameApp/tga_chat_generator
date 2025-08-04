@@ -28,20 +28,29 @@ class DeviceConfig(TypedDict):
 
 # Device profiles database
 DEVICE_PROFILES: Dict[str, DeviceConfig] = {
-    # Mobile Phones
+    # Mobile Phones - Increased scale for better quality
     DeviceType.IPHONE_13_PRO: {
-        'width': 390, 'height': 844, 'is_mobile': True, 'device_scale_factor': 3.0
+        'width': 1170,  # 390 * 3
+        'height': 2532,  # 844 * 3
+        'is_mobile': True,
+        'device_scale_factor': 3.0
     },
     DeviceType.SAMSUNG_GALAXY_S21: {
         'width': 360, 'height': 800, 'is_mobile': True, 'device_scale_factor': 3.0
     },
-    # Tablets
+    # Tablets - Increased scale for better quality
     DeviceType.IPAD_AIR: {
-        'width': 1180, 'height': 820, 'is_mobile': True, 'device_scale_factor': 2.0
+        'width': 2360,  # 1180 * 2
+        'height': 1640,  # 820 * 2
+        'is_mobile': True,
+        'device_scale_factor': 2.0
     },
-    # Desktop (default)
+    # Desktop - Increased resolution and scale for better quality
     DeviceType.DESKTOP: {
-        'width': 1920, 'height': 1080, 'is_mobile': False, 'device_scale_factor': 1.0
+        'width': 2560,  # Higher base resolution
+        'height': 1440,
+        'is_mobile': False,
+        'device_scale_factor': 2.0  # Increased from 1.0 to 2.0 for better quality
     }
 }
 
@@ -96,8 +105,9 @@ class ScreenshotTaker:
         output_path: str,
         device_type: str = DeviceType.DESKTOP,
         zoom_level: float = 1.0,
-        quality: int = 90,
-        wait_for_load: bool = True
+        quality: int = 100,  # Increased from 90 to 100 for maximum quality
+        wait_for_load: bool = True,
+        wait_after_load: int = 3000  # Added wait time after page load in ms
     ) -> str:
         """
         Capture a screenshot of the specified URL.
@@ -145,14 +155,24 @@ class ScreenshotTaker:
             output_path = Path(output_path)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            logger.info(f"Capturing screenshot to {output_path}...")
-            await self.page.screenshot(
-                path=str(output_path),
-                full_page=True,
-                type='jpeg' if str(output_path).lower().endswith(('.jpg', '.jpeg')) else 'png',
-                quality=quality if str(output_path).lower().endswith(('.jpg', '.jpeg')) else None,
-                scale='css'
-            )
+            logger.info(f"Capturing high-quality screenshot to {output_path}...")
+            # Additional wait to ensure all animations and transitions are complete
+            await asyncio.sleep(wait_after_load / 1000)
+            
+            # Take screenshot with optimized settings
+            screenshot_options = {
+                'path': str(output_path),
+                'full_page': True,
+                'type': 'jpeg' if str(output_path).lower().endswith(('.jpg', '.jpeg')) else 'png',
+                'quality': quality if str(output_path).lower().endswith(('.jpg', '.jpeg')) else None,
+                'scale': 'device',  # Changed from 'css' to 'device' for higher quality
+                'animations': 'disabled',  # Disable animations for cleaner capture
+                'clip': None,
+                'timeout': 30000  # 30 second timeout for large pages
+            }
+            
+            # Take the screenshot
+            await self.page.screenshot(**screenshot_options)
             
             logger.info("Screenshot saved successfully")
             return str(output_path)
