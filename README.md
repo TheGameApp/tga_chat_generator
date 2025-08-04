@@ -165,13 +165,32 @@ http://localhost:8000
 
 ```
 tga_chat_generator/
-├── main.py            # Aplicación principal de FastAPI
-├── requirements.txt   # Dependencias del proyecto
-├── static/            # Archivos estáticos (CSS, JS, imágenes)
-├── templates/         # Plantillas HTML
-│   └── index.html     # Plantilla principal
-└── screenshots/       # Carpeta donde se guardan las capturas
+├── main.py                    # Aplicación principal de FastAPI
+├── requirements.txt           # Dependencias del proyecto
+├── src/                       # Módulos de Python
+│   ├── __init__.py            # Inicialización del paquete
+│   ├── browser_screenshot.py  # Módulo de captura de pantalla
+│   └── conversation_util.py   # Utilidades para manejo de conversaciones
+├── static/                    # Archivos estáticos (CSS, JS, imágenes)
+│   └── js/
+│       └── conversation.json  # Datos de la conversación actual
+├── templates/                 # Plantillas HTML
+│   └── index.html             # Plantilla principal
+└── screenshots/               # Carpeta donde se guardan las capturas
 ```
+
+## 🔧 Módulos
+
+### `conversation_util.py`
+Módulo que maneja la validación y persistencia de los datos de la conversación.
+
+**Funciones principales:**
+- `save_conversation_data(conversation_data)`: Valida y guarda los datos de la conversación en `static/js/conversation.json`
+- `read_conversation_data()`: Lee y devuelve los datos de la conversación actual
+
+**Modelos Pydantic:**
+- `Slide`: Modelo para un mensaje individual en la conversación
+- `ConversationData`: Modelo para toda la estructura de la conversación
 
 ## 🌐 Endpoints de la API
 
@@ -192,12 +211,69 @@ Abre automáticamente el navegador predeterminado en la aplicación.
 curl http://localhost:8000/open-browser
 ```
 
-### `POST /save-screenshot`
-Guarda una captura de pantalla del chat.
+### `POST /api/screenshot`
+Guarda los datos de la conversación y toma una captura de pantalla del chat.
 
 **Parámetros (JSON):**
-- `image` (string): Datos de la imagen en formato base64
-- `filename` (string, opcional): Nombre personalizado para el archivo
+- `conversation_data` (object, opcional): Datos de la conversación a guardar
+  - `slides` (array): Lista de mensajes de la conversación
+    - `rol` (string): Rol del remitente (ej: "Chico", "Chica")
+    - `tipo_slide` (string): Tipo de mensaje (ej: "chat")
+    - `mensaje` (string): Contenido del mensaje
+    - `isStoryReply` (boolean, opcional): Indica si es una respuesta a una historia
+
+**Ejemplo de uso con curl:**
+```bash
+curl -X POST "http://localhost:8000/api/screenshot" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slides": [
+      {
+        "rol": "Chico",
+        "tipo_slide": "chat",
+        "mensaje": "¡Hola! ¿Cómo estás?",
+        "isStoryReply": true
+      },
+      {
+        "rol": "Chica",
+        "tipo_slide": "chat",
+        "mensaje": "¡Muy bien, gracias! ¿Y tú?",
+        "isStoryReply": false
+      }
+    ]
+  }'
+```
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "status": "success",
+  "screenshot_url": "http://localhost:8000/screenshots/screenshot_20250804_113808.jpg",
+  "saved_path": "screenshots/screenshot_20250804_113808.jpg"
+}
+```
+
+### `GET /api/conversation`
+Obtiene los datos actuales de la conversación.
+
+**Respuesta exitosa (200 OK):**
+```json
+{
+  "slides": [
+    {
+      "rol": "Chico",
+      "tipo_slide": "chat",
+      "mensaje": "¡Hola! ¿Cómo estás?",
+      "isStoryReply": true
+    }
+  ]
+}
+```
+
+**Ejemplo de uso con curl:**
+```bash
+curl http://localhost:8000/api/conversation
+```
 
 **Respuesta exitosa (200 OK):**
 ```json

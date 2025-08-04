@@ -3,12 +3,14 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Dict, Any, Optional
 import uvicorn
 from datetime import datetime
 from pathlib import Path
 import logging
 import os
 from src.browser_screenshot import ScreenshotTaker, DeviceType
+from src.conversation_util import save_conversation_data
 
 # Crear la aplicación FastAPI
 app = FastAPI(title="TGA Chat Generator")
@@ -58,10 +60,16 @@ async def debug_static(file_path: str):
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Modelos Pydantic para validación de datos
+
 # Endpoint para capturar capturas de pantalla
 @app.post("/api/screenshot")
-async def take_screenshot(http_request: Request):
+async def take_screenshot(http_request: Request, conversation_data: Optional[Dict[str, Any]] = None):
     try:
+        # Guardar los datos de la conversación si se proporcionaron
+        if conversation_data:
+            save_conversation_data(conversation_data)
+
         # Crear directorio de capturas si no existe
         screenshots_dir = Path("screenshots")
         screenshots_dir.mkdir(exist_ok=True)
