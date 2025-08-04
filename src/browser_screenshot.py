@@ -77,7 +77,7 @@ class ScreenshotTaker:
     async def setup(self):
         """Initialize Playwright and browser."""
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.webkit.launch(
+        self.browser = await self.playwright.chromium.launch(
             headless=self.headless,
             args=['--disable-web-security']  # Disable CORS for local development
         )
